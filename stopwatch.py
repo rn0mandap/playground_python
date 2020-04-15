@@ -1,3 +1,5 @@
+import ctypes
+import datetime
 import tkinter as tk
 
 
@@ -11,8 +13,32 @@ class Stopwatch:
 		self.parent.resizable(0, 0)
 		self.center(self.parent, 0, -35)
 		
+		# python 3, minimize console
+		ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 6)
+		
 		self.set_variables()
 		self.set_ui()
+		
+	
+	def save2file(self):
+		if self.seconds_from_start <= 10:
+			return
+		try:
+			with open(self.filename, "r") as txtr:
+				buff = txtr.read()
+		except FileNotFoundError:
+			buff = ""
+		
+		tnow = datetime.datetime.now()
+		tstart = tnow - datetime.timedelta(seconds=self.seconds_from_start)
+		
+		data = "{}/{}/{} {}:{}, ".format(tstart.month, tstart.day, tstart.year, tstart.hour, tstart.minute)
+		data += "{}/{}/{} {}:{}, ".format(tnow.month, tnow.day, tnow.year, tnow.hour, tnow.minute)
+		data += self.seconds2string(self.seconds_from_start)
+		
+		buff += data + "\n"
+		with open(self.filename, "w") as txtw:
+			txtw.write(buff)
 		
 		
 	def set_ui(self):
@@ -24,6 +50,7 @@ class Stopwatch:
 		
 	
 	def set_variables(self):
+		self.filename = "stopwatch_data.txt"
 		self.seconds_from_start = 0
 		self.stopwatch_paused = True
 		self.stopwatch_position = "se"
@@ -89,6 +116,8 @@ class Stopwatch:
 			self.stopwatch_paused = False
 		else:
 			self.stopwatch_paused = True
+			self.save2file()
+			self.seconds_from_start = 0
 	
 	
 	def stopwatch_go(self, *arg):
@@ -98,7 +127,7 @@ class Stopwatch:
 		self.parent.after(1000, self.stopwatch_go)
 		
 	
-	def seconds2string(self, seconds):
+	def seconds2string(self, seconds, shorten=True, *arg):
 		h = str(seconds // 3600)
 		m = str((seconds % 3600) // 60)
 		s = str(seconds % 60)
@@ -106,7 +135,7 @@ class Stopwatch:
 		m = "0"+m if len(m) == 1 else m
 		s = "0"+s if len(s) == 1 else s
 		txt = "{}:{}:{}".format(h, m, s)
-		if seconds // 3600 <= 0:
+		if seconds // 3600 <= 0 and shorten:
 			txt = "{}:{}".format(m, s)
 		return txt
 	
